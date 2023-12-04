@@ -1,0 +1,88 @@
+module day3
+    def sample = """467..114..
+                    ...*......
+                    ..35..633.
+                    ......#...
+                    617*......
+                    .....+.58.
+                    ..592.....
+                    ......755.
+                    ...$.*....
+                    .664.598.."""
+
+    @outline
+    def grid[Data](i, j, c) = lines[Data](i, row) and char(row, j, c) from row
+
+    def digit = '1'; '2'; '3'; '4'; '5'; '6'; '7'; '8'; '9'; '0'
+
+    @outline
+    def numbers[Data](i, j, val) = regex_match_all["\\d+", lines[Data, i]](j, val)
+
+    module part1
+        def symbol(c in Char) = c != '.' and not digit(c)
+
+        @outline
+        def symbol_loc[Data](i, j) = grid[Data](i, j, c) and symbol(c) from c
+
+        @outline
+        def adjacent_loc[Data](i, j) =
+            {{isymb - 1; isymb; isymb + 1}, {jsymb - 1; jsymb; jsymb + 1}}(i, j)
+            from isymb, jsymb
+            where symbol_loc[Data](isymb, jsymb)
+
+        @outline
+        def adjacent_digit[Data](i, j) =
+            adjacent_loc[Data](i, j) and digit(grid[Data][i, j])
+
+        @outline
+        def adjacent_numbers[Data](i, j, val) =
+            numbers(Data, i, j, val) 
+            and adjacent_digit[Data](i, jrng)
+            and range(j, j + string_length[val], 1, jrng)
+            from jrng
+
+        @outline
+        def result[Data](tot) =
+            sum[{i, j, val:
+                adjacent_numbers[Data](i, j, strval)
+                and parse_int(strval, val)
+                from strval
+            }](tot)
+    end
+
+    module part2
+        def gear_symbol(c in Char) = c = '*'
+
+        @outline
+        def gear_symbol_loc[Data](i, j) = grid[Data](i, j, c) and gear_symbol(c) from c
+
+        @outline
+        def adjacent_loc[Data](i, j, isymb, jsymb) =
+            {{isymb - 1; isymb; isymb + 1}, {jsymb - 1; jsymb; jsymb + 1}}(i, j)
+            and gear_symbol_loc[Data](isymb, jsymb)
+
+        @outline
+        def adjacent_digit[Data](i, j, isymb, jsymb) =
+            adjacent_loc[Data](i, j, isymb, jsymb) and digit(grid[Data][i, j])
+
+        @outline
+        def adjacent_numbers[Data](i, j, isymb, jsymb, val) =
+            numbers(Data, i, j, val) 
+            and adjacent_digit[Data](i, jrng, isymb, jsymb)
+            and range(j, j + string_length[val], 1, jrng)
+            from jrng
+
+        @outline
+        def gear[Data](isymb, jsymb, val) =
+            count[{i, j: adjacent_numbers[Data](i, j, isymb, jsymb, _)}] = 2
+            and adjacent_numbers[Data](_, _, isymb, jsymb, val)
+
+        @outline
+        def gear_ratio[Data](isymb, jsymb, ratio) =
+            product[{val: gear[Data](isymb, jsymb, strval) and parse_int(strval, val) from strval}](ratio)
+            
+        @outline
+        def result[Data](tot) =
+            sum[gear_ratio[Data]](tot)
+    end
+end

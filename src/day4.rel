@@ -1,0 +1,66 @@
+module day4
+    def sample = """Card 1: 41 48 83 86 17 | 83 86  6 31 17  9 48 53
+Card 2: 13 32 20 16 61 | 61 30 68 82 17 32 24 19
+Card 3:  1 21 53 59 44 | 69 82 63 72 16 21 14  1
+Card 4: 41 92 73 84 69 | 59 84 76 51 58  5 54 83
+Card 5: 87 83 26 28 32 | 88 30 70 12 93 22 82 36
+Card 6: 31 18 13 56 72 | 74 77 10 23 35 67 36 11"""
+
+    @outline
+    module parse[Data]
+        def card_string(i in Int, str in String) = lines[Data](i, str)
+
+        def numbers_string(i, str) = string_split(": ", card_string[i], 2, str)
+
+        @inline
+        def split_and_parse_numbers(str, num) =
+            string_split(" ", str, _, numstr)
+            and parse_int(numstr, num)
+            from numstr
+        
+        def winning_numbers(i in Int, num in Int) = 
+            winning_part = string_split[" | ", numbers_string[i], 1]
+            and split_and_parse_numbers(winning_part, num)
+            from winning_part
+
+        def my_numbers(i in Int, num in Int) =
+            my_part = string_split[" | ", numbers_string[i], 2]
+            and split_and_parse_numbers(my_part, num)
+            from my_part
+    end
+
+    @outline
+    def winning_numbers[Data](i, num) = parse[Data](:winning_numbers, i, num) and parse[Data](:my_numbers, i, num)
+
+    @outline
+    def count_winning[Data](i, cnt) = count[winning_numbers[Data][i]](cnt)
+
+    module part1
+        @outline
+        def score_winning[Data](i, score) = power(2, count_winning[Data][i] - 1, score)
+        
+        @outline
+        def result[Data](tot) = sum[score_winning[Data]](tot)
+    end
+
+    module part2
+        @outline
+        def copies[Data](1, 1) = true
+        @outline
+        def copies[Data](i in Int, cnt in Int) =
+            {{sum[{j, j_copies:
+                copies[Data](j, j_copies) and
+                range(1, i - 1, 1, j) and
+                count_winning[Data](j, j_cnt) and
+                i <= j + j_cnt
+                from j_cnt}] <++ 0} + 1}(cnt) and
+            first[parse[Data][:card_string]](i)
+
+        @outline
+        def result[Data](tot) = sum[copies[Data]](tot)
+    end
+end
+
+
+
+

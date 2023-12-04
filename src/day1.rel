@@ -1,0 +1,78 @@
+module day1
+
+    @inline
+        def int_chars(str, c, i) = char(str, i, c) and parse_int(string[c], _)
+
+    module part1
+        def sample = """1abc2
+                        pqr3stu8vwx
+                        a1b2c3d4e5f
+                        treb7uchet"""
+
+        @inline
+        def get_calibration_value(str, val) =
+            fst = argmin[int_chars[str]]
+            and lst = argmax[int_chars[str]]
+            and concat(fst, lst, val)
+            from fst, lst
+
+        @outline
+        def calibration_values[Data](i, tot) = 
+            lines[Data](i, code)
+            and get_calibration_value(code, strtot)
+            and parse_int(strtot, tot)
+            from code, strtot
+
+        @outline
+        def result[Data](tot) = sum[calibration_values[Data]](tot)
+    end
+
+    module part2
+        def sample = """two1nine
+                        eightwothree
+                        abcone2threexyz
+                        xtwone3four
+                        4nineeightseven2
+                        zoneight234
+                        7pqrstsixteen"""
+
+        def digits = {
+            '1', "one"; 
+            '2', "two"; 
+            '3', "three"; 
+            '4', "four"; 
+            '5', "five"; 
+            '6', "six"; 
+            '7', "seven"; 
+            '8', "eight"; 
+            '9', "nine"; 
+            '0', "zero";
+        }
+
+        @inline
+        def find_and_map_word_digits(str, c, i) =
+            regex_match_all[last[digits], str](i, word)
+            and digits(c, word)
+            from word
+
+        @outline
+        def find_digit[MinOrMax, str](val) = 
+            MinOrMax[{
+                int_chars[str];
+                find_and_map_word_digits[str]
+            }](cval) and
+            string(cval, val)
+            from cval
+
+        @outline
+        def calibration_values[Data](i, tot) = 
+            lines[Data](i, code)
+            and find_digit(argmin, code, fst)
+            and find_digit(argmax, code, lst)
+            and parse_int(concat[fst, lst], tot)
+            from code, fst, lst
+
+        @outline
+        def result[Data](tot) = sum[calibration_values[Data]](tot)
+    end
+end

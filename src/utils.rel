@@ -1,0 +1,2 @@
+@outline
+def lines[Data] = string_split["\n", Data]
