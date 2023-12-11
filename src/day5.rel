@@ -1,0 +1,204 @@
+module day5
+    def sample = """seeds: 79 14 55 13
+
+seed-to-soil map:
+50 98 2
+52 50 48
+
+soil-to-fertilizer map:
+0 15 37
+37 52 2
+39 0 15
+
+fertilizer-to-water map:
+49 53 8
+0 11 42
+42 0 7
+57 7 4
+
+water-to-light map:
+88 18 7
+18 25 70
+
+light-to-temperature map:
+45 77 23
+81 45 19
+68 64 13
+
+temperature-to-humidity map:
+0 69 1
+1 0 69
+
+humidity-to-location map:
+60 56 37
+56 93 4"""
+
+    def cur_data = data
+
+    module parse
+        def sections = string_split["\n\n", cur_data]
+        def seeds(i, id) = 
+            raw_str = string_split[": ", sections[1]][2] and
+            string_split[" ", raw_str](i, seed_str) and
+            parse_int(seed_str, id)
+            from raw_str, seed_str
+
+        def get_val(row_str, ind, val) =
+            string_split[" ", row_str](ind, val_str) and
+            parse_int(val_str, val)
+            from val_str
+
+        def raw_maps(index, src, dst, rng) =
+            sections(index, raw_str) and
+            index >= 2 and // exclude seeds
+            lines[raw_str](row_ind, row_str) and
+            row_ind >= 2 and // skip header
+            src = get_val[row_str, 2] and
+            rng = get_val[row_str, 3] and
+            dst = get_val[row_str, 1]
+            from raw_str, row_ind, row_str
+
+        def maps(index, src, dst, rng) =
+            raw_maps(raw_index, src, dst, rng) and
+            index = #({i: sections(i, _)}) and
+            despecialize(index, raw_index)
+            from raw_index
+
+        def maxval(m) =
+            max[{
+                {v: v = src + rng and raw_maps(_, src, _, rng) from src, rng};
+                {v: v = dst + rng and raw_maps(_, _, dst, rng) from dst, rng}
+            }](m)
+
+        def prev_spec(speci, lastspeci) = 
+            lastspeci = #({x: sections(raw_i, _) and x = raw_i - 1 from raw_i})
+            and despecialize(speci, i) 
+            and despecialize(lastspeci, lasti)
+            and lasti = i - 1
+            and maps[speci](y...) 
+            from lasti, i, y...
+    end
+
+    value type Mapping = Int, Int, rng from rng in Int where rng > 0
+
+    def mapping[ind](mapping) = parse:maps[ind](src, tgt, rng) and ^Mapping(src, tgt, rng, mapping) from src, tgt, rng
+    
+    // @inline
+    def overlaps(m1 in Mapping, m2 in Mapping) =
+        tgt1 >= src2 and
+        tgt1 < src2 + rng2
+        from src1, tgt1, rng1, src2, tgt2, rng2
+        where ^Mapping(src1, tgt1, rng1, m1) and
+        ^Mapping(src2, tgt2, rng2, m2)
+    
+    def overlaps(m1 in Mapping, m2 in Mapping) =
+        tgt1 < src2 and
+        tgt1 + rng1 > src2 and
+        tgt1 <= src2 + rng2
+        from src1, tgt1, rng1, src2, tgt2, rng2
+        where ^Mapping(src1, tgt1, rng1, m1) and
+        ^Mapping(src2, tgt2, rng2, m2)
+    
+    @inline
+    def src(m, s) = ^Mapping(s, _, _, m)
+    @inline
+    def dst(m, d) = ^Mapping(_, d, _, m)
+    @inline
+    def rng(m, r) = ^Mapping(_, _, r, m)
+    
+    @inline
+    def augment[M] =
+        M;
+        {low_m:
+            min_src = min[{src: ^Mapping(src, _, _, m) and M(m) from m}] and
+            min_src != 0 and   
+            ^Mapping(0, 0, min_src, low_m)
+            from min_src
+        };
+        {high_m:
+            max_src = max[{val: ^Mapping(src, _, rng, m) and val = src+rng and M(m) from m, src, rng}] and
+            max_src != day5:parse:maxval  and
+            ^Mapping(max_src, max_src, day5:parse:maxval - max_src, high_m)
+            from max_src
+        };
+        {mid_m:
+            exists(m1, src_start, next_src: 
+            M(m1) and 
+            src_start = m1.src + m1.rng and
+            forall(m2 in M: src_start != m2.src) and
+            next_src = min[{src: M(m) and m.src from m where m.src > src_start}] and
+            ^Mapping(src_start, src_start, next_src - src_start, mid_m)
+            )
+        }
+    
+    @outline
+    module join[M1, M2]
+        def overlap(m1, m2) = overlaps(m1, m2) and M1(m1) and M2(m2)
+    
+        def intersect_low(m) =
+            ^Mapping(new_src, new_tgt, new_rng, m) and
+            tgt1 >= src2 and
+            new_src = src1 and
+            new_tgt = tgt2 + tgt1 - src2 and
+            new_rng = minimum[tgt2 + rng2 - new_tgt, rng1]
+            from m1, m2, src1, tgt1, rng1, src2, tgt2, rng2, new_src, new_tgt, new_rng
+            where overlap(m1, m2) and
+            ^Mapping(src1, tgt1, rng1, m1) and
+            ^Mapping(src2, tgt2, rng2, m2)
+    
+        def intersect_high(m) =
+            ^Mapping(new_src, new_tgt, new_rng, m) and
+            tgt1 < src2 and
+            new_src = src1 + src2 - tgt1 and
+            new_tgt = tgt2 and
+            new_rng = minimum[rng1 - (src2 - tgt1), rng2]
+            from m1, m2, src1, tgt1, rng1, src2, tgt2, rng2, new_src, new_tgt, new_rng
+            where overlap(m1, m2) and
+            ^Mapping(src1, tgt1, rng1, m1) and
+            ^Mapping(src2, tgt2, rng2, m2)
+    
+        def join_mapping = intersect_high; intersect_low//; tail
+    end
+
+    
+    // @ondemand
+    def get_mapping(m in Mapping, src in Int, tgt in Int) =
+        ^Mapping(possible_src, possible_dst, rng, m) and
+        src >= possible_src and
+        src < possible_src + rng and
+        tgt = possible_dst + src - possible_src
+        from possible_src, possible_dst, rng
+
+    def maps_tc[#2] = augment[mapping[#2]]
+    def maps_tc[speci] = join[maps_tc[parse:prev_spec[speci]], augment[mapping[speci]]][:join_mapping]
+
+    module part1    
+        def seed_to_location(minloc) =
+            min[{loc:
+                maps_tc(i, m) and
+                parse[:seeds](_, seed) and
+                get_mapping(m, seed, loc) and
+                i = #(max[first[parse:sections]])
+                from i, seed, m
+                }](minloc)
+
+        def result(loc) = seed_to_location(loc)  
+    end
+
+    module part2
+        def seed_to_location(min_loc) =
+            min[{loc: 
+                maps_tc(i, m) and
+                get_mapping(m, seed, loc) and
+                parse[:seeds](seed_i, seed_start) and
+                parse[:seeds](seed_i + 1, seed_rng) and
+                range(seed_start, seed_start + seed_rng -1, 1, seed) and
+                i = #(max[first[parse:sections]]) and
+                seed_i % 2 != 0
+                from i, seed_i, seed_rng, seed_start, seed, m
+            }](min_loc)
+
+        def result(loc) = seed_to_location(loc) 
+
+    end
+end
