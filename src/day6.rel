@@ -1,0 +1,60 @@
+module day6
+    module part1
+        doc"""
+        parsing was fiddlier than expected and data is tiny, so just manually parse
+        
+        Time:      7  15   30
+        Distance:  9  40  200"""
+        module sample
+            def time = 1, 7; 2, 15; 3, 30
+            def distance = 1, 9; 2, 40; 3, 200
+        end
+    
+        doc"""
+        parsing was fiddlier than expected and data is tiny, so just manually parse
+        
+        Time:        46     68     98     66
+        Distance:   358   1054   1807   1080"""
+        module data
+            def time = 1, 46; 2, 68; 3, 98; 4, 66
+            def distance = 1, 358; 2, 1054; 3, 1807; 4, 1080
+        end
+    end
+
+    module part2
+        doc"""
+        parsing was fiddlier than expected and data is tiny, so just manually parse
+        
+        Time:      71530
+        Distance:  940200"""
+        module sample
+            def time = 1, 71530
+            def distance = 1, 940200
+        end
+    
+        doc"""
+        parsing was fiddlier than expected and data is tiny, so just manually parse
+        
+        Time:        46689866
+        Distance:   358105418071080"""
+        module data
+            def time = 1, 46689866
+            def distance = 1, 358105418071080
+        end
+    end
+    
+
+    def cur_data = part2:data
+
+    @inline
+    def winning_race(i, time_held in Int) =
+        cur_data:time(i, total_time) and
+        cur_data:distance(i, min_dist) and
+        range(1, total_time, 1, time_held) and
+        time_held * (total_time - time_held) > min_dist
+        from total_time, min_dist
+
+    def races_won(i, tot) = count[winning_race[i]](tot)
+
+    def result(tot) = product[races_won](tot)
+end
