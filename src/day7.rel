@@ -1,0 +1,176 @@
+@inline
+def cmp(a, b, i) = a > b and i = -1
+@inline
+def cmp(a, b, i) = a = b and i = 0
+@inline
+def cmp(a, b, i) = a < b and i = 1
+
+
+def rel = 3; 4; 5; 6
+
+@inline
+def sort_by[R, Cmp](i, x) = sort[_sort_by[R, Cmp]](i, _, x)
+
+@outline
+def _sort_by[R, Cmp] =
+    sum[{o, r: Cmp(x, o, r) and R(o)}], x
+    from x in R
+
+module day7
+    def sample = """32T3K 765
+T55J5 684
+KK677 28
+KTJJT 220
+QQQJA 483"""
+
+    def cur_data = data
+
+    // numerics
+    @inline
+    def char_to_value(c in Char, v in Int) = parse_int(string[c], v)
+    // true chars
+    def char_to_value = {
+        'T', 10;
+        'J', 1; // 11 for part 1
+        'Q', 12;
+        'K', 13;
+        'A', 14;
+    }
+
+    module parse
+        def hands_raw(i, s) = lines[cur_data](i, s)
+
+        def hand_raw(i, s) = string_split[" ", hands_raw[i]][1](s)
+
+        def hand(i, j, v) =
+            hand_raw(i, s) and 
+            char(s, j, c) and
+            char_to_value(c, v)
+            from s, c
+        
+        def bids(i, b) = parse_int[string_split[" ", hands_raw[i]][2]](b)
+    end
+
+    module part1
+        @outline
+        def group_by_card[Hand](v, cnt) =
+            count[{i: Hand(i, v)}](cnt)
+
+        @outline
+        def hand_type[Hand] = {
+            //"five_of_a_kind",
+            1, group_by_card[Hand](_, 5);
+        
+            //;"four_of_a_kind",
+            2, group_by_card[Hand](_, 4);
+    
+            //;"full_house",
+            3, group_by_card[Hand](_, 3) and group_by_card[Hand](_, 2);
+    
+            //;"three_of_a_kind",
+            4, group_by_card[Hand](_, 3) and not group_by_card[Hand](_, 2);
+    
+            //;"two_pairs",
+            5, count[{i: group_by_card[Hand](i, 2)}] = 2;
+            
+            //;"one_pair",
+            6, count[{i: group_by_card[Hand](i, 2)}] = 1 and group_by_card[Hand](_, 1);
+    
+            //;"high_card",
+            7, count[{i: group_by_card[Hand](i, 1)}] = 5;
+        }
+
+        @inline
+        def compare_by_hand_type[H1, H2] = cmp[hand_type[H1], hand_type[H2]]
+
+        @inline
+        def compare_by_card[H1, H2] = argmin[{v, i: cmp[H2[i], H1[i]](v) and v != 0}]
+
+        def _sort_hands(val, i) =
+            sum[{j, r: 
+                compare_by_hand_type[parse:hand[i], parse:hand[j]](r1) and
+                ((r1 = 0, compare_by_card[parse:hand[i], parse:hand[j]](r)) or
+                (r1 != 0, r = r1))
+                from r1
+            }](val)
+
+        def rank_hands(i, rank) =
+            sort[_sort_hands](rank, _, i)
+
+        def result(tot) = sum[{i, v: rank_hands(i, rank) and parse:bids(i, bid) and  v = rank * bid from rank, bid}](tot)
+        
+    end
+
+    module part2
+        @outline
+        def group_by_card_raw[Hand](v, cnt) =
+            count[{i: Hand(i, v)}](cnt)
+
+        @outline
+        def group_by_card_excluding[Hand, ToExclude](v, cnt) = 
+            group_by_card_raw[Hand](v, cnt) and not ToExclude(v)
+
+        @inline
+        def num_jokers[Hand] = group_by_card_raw[Hand][1] <++ 0
+
+        @outline
+        def num_max_card[Hand] = group_by_card_raw[Hand][max_card[Hand]]
+
+        @outline
+        def max_card[Hand] = max[argmax[group_by_card_excluding[Hand, 1]]]
+
+        @outline
+        def group_by_card[Hand](v, cnt) =
+            {
+                group_by_card_excluding[Hand, {1; max_card[Hand]}];
+                max_card[Hand], num_jokers[Hand] + num_max_card[Hand];
+                num_jokers[Hand] = 5, 1, 5;
+            }(v, cnt)
+
+        @outline
+        def hand_type[Hand] = {
+            //"five_of_a_kind",
+            1, group_by_card[Hand](_, 5);
+        
+            //;"four_of_a_kind",
+            2, group_by_card[Hand](_, 4);
+    
+            //;"full_house",
+            3, group_by_card[Hand](_, 3) and group_by_card[Hand](_, 2);
+    
+            //;"three_of_a_kind",
+            4, group_by_card[Hand](_, 3) and not group_by_card[Hand](_, 2);
+    
+            //;"two_pairs",
+            5, count[{i: group_by_card[Hand](i, 2)}] = 2;
+            
+            //;"one_pair",
+            6, count[{i: group_by_card[Hand](i, 2)}] = 1 and group_by_card[Hand](_, 1);
+    
+            //;"high_card",
+            7, count[{i: group_by_card[Hand](i, 1)}] = 5;
+        }
+
+        @inline
+        def compare_by_hand_type[H1, H2] = cmp[hand_type[H1], hand_type[H2]]
+
+        @inline
+        def compare_by_card[H1, H2] = argmin[{v, i: cmp[H2[i], H1[i]](v) and v != 0}]
+
+        def _sort_hands(val, i) =
+            sum[{j, r: 
+                compare_by_hand_type[parse:hand[i], parse:hand[j]](r1) and
+                (
+                    (r1 = 0, compare_by_card[parse:hand[i], parse:hand[j]](r)) or
+                    (r1 != 0, r = r1)
+                )
+                from r1
+            }](val)
+
+        def rank_hands(i, rank) =
+            sort[_sort_hands](rank, _, i)
+
+        def result(tot) = sum[{i, v: rank_hands(i, rank) and parse:bids(i, bid) and  v = rank * bid from rank, bid}](tot)
+        
+    end
+end
